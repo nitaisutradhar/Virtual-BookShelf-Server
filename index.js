@@ -39,9 +39,26 @@ async function run() {
       const myBooks = await bookCollection.find(filter).toArray()
       res.send(myBooks)
     })
+    app.get('/my-book/:id', async (req, res)=> {
+      const {id} = req.params;
+      const query = { _id : new ObjectId(id)}
+      const result = await bookCollection.findOne(query)
+      res.send(result)
+    })
     app.post('/books', async (req,res)=> {
       const bookData = req.body;
       const result = await bookCollection.insertOne(bookData)
+      res.send(result)
+    })
+    app.put('/update-book/:id', async (req, res)=> {
+      const {id} = req.params;
+      const filter =  { _id : new ObjectId(id)}
+      const updatedBook = req.body
+      const updatedDoc = {
+        $set: updatedBook
+      }
+      const options = { upsert : true }
+      const result = await bookCollection.updateOne(filter, updatedDoc, options)
       res.send(result)
     })
     app.delete('/books/:id', async (req, res) => {
