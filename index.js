@@ -27,10 +27,21 @@ async function run() {
     //await client.connect();
 
     const usersCollection = client.db('bookshelf').collection('users')
+    const bookCollection = client.db('bookshelf').collection('books')
+    // books related APIs
+    app.get('/books', async (req, res) => {
+      const result = await bookCollection.find().toArray()
+      res.send(result)
+    })
+    app.post('/books', async (req,res)=> {
+      const bookData = req.body;
+      const result = await bookCollection.insertOne(bookData)
+      res.send(result)
+    })
     // users related APIs
     app.get('/users', async (req, res)=> {
       const result = await usersCollection.find().toArray();
-      res.send()
+      res.send(result)
     })
     app.post('/users', async (req,res) => {
       const userProfile = req.body;
