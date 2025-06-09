@@ -9,7 +9,7 @@ app.use(cors())
 app.use(express.json())
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = process.env.MONGO_URI;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -33,9 +33,21 @@ async function run() {
       const result = await bookCollection.find().toArray()
       res.send(result)
     })
+    app.get('/my-books/:email', async(req, res)=> {
+      const email = req.params.email
+      const filter = {user_email : email}
+      const myBooks = await bookCollection.find(filter).toArray()
+      res.send(myBooks)
+    })
     app.post('/books', async (req,res)=> {
       const bookData = req.body;
       const result = await bookCollection.insertOne(bookData)
+      res.send(result)
+    })
+    app.delete('/books/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = {_id : new ObjectId(id)}
+      const result = await bookCollection.deleteOne(query)
       res.send(result)
     })
     // users related APIs
