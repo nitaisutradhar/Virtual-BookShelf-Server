@@ -61,6 +61,20 @@ async function run() {
       const result = await bookCollection.updateOne(filter, updatedDoc, options)
       res.send(result)
     })
+    app.patch('/book/:id/upvote', async (req, res)=> {
+      const bookId = req.params.id;
+
+      const result = await bookCollection.findOneAndUpdate(
+        {_id: new ObjectId(bookId)},
+        { $inc: {upvote : 1}},
+        {returnDocument: 'after'} // to get updated doc
+      )
+
+      if(!result) {
+        return res.status(404).json({message: 'Book not found'})
+      }
+      res.json({upvote : result.upvote})
+    })
     app.delete('/books/:id', async (req, res) => {
       const id = req.params.id;
       const query = {_id : new ObjectId(id)}
