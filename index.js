@@ -45,6 +45,10 @@ async function run() {
       const result = await bookCollection.findOne(query)
       res.send(result)
     })
+    app.get('/popular-books', async (req, res)=> {
+      const books = await bookCollection.find().sort({upvote: -1}).limit(6).toArray()
+      res.json(books)
+    })
     app.post('/books', async (req,res)=> {
       const bookData = req.body;
       const result = await bookCollection.insertOne(bookData)
