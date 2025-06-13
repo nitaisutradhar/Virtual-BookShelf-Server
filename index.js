@@ -1,6 +1,17 @@
 const express = require('express')
 require('dotenv').config()
 const cors = require('cors')
+
+var admin = require("firebase-admin");
+//firebase admin sdk
+const decoded = Buffer.from(process.env.FB_SERVICE_KEY, 'base64').toString(
+  'utf-8'
+)
+var serviceAccount = JSON.parse(decoded)
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
 const app = express()
 const port = process.env.PORT || 3000
 
@@ -21,6 +32,20 @@ const client = new MongoClient(uri, {
   }
 });
 
+// jwt middlewares
+const verifyJWT = async (req,res,next) => {
+  const token = req?.headers?.authorization?.split(' ')[1]
+   if (!token) return res.status(401).send({ message: 'Unauthorized Access!' })
+  try {
+    const decoded = await admin.auth().verifyIdToken(token)
+    req.tokenEmail = decoded.email
+    next()
+  } catch (err) {
+    console.log(err)
+    return res.status(401).send({ message: 'Unauthorized Access!' })
+  }
+}
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -33,8 +58,13 @@ async function run() {
       const result = await bookCollection.find().toArray()
       res.send(result)
     })
-    app.get('/my-books/:email', async(req, res)=> {
+    app.get('/my-books/:email' , verifyJWT, async(req, res)=> {
+      const decodedEmail = req.tokenEmail
       const email = req.params.email
+
+      if(decodedEmail !== email)
+        return res.status(403).send({ message: 'Forbidden Access!' })
+
       const filter = {user_email : email}
       const myBooks = await bookCollection.find(filter).toArray()
       res.send(myBooks)
