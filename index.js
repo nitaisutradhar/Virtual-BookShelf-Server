@@ -109,6 +109,12 @@ async function run() {
     })
     
     // books related APIs
+    app.get('/newlyReleased', async (req,res)=> {
+      const result = await bookCollection.find().sort({createdAt: -1}).limit(5).toArray()
+      res.send(result)
+    })
+
+    // get books by search and filter
     app.get('/books', async (req, res) => {
   const { search, status } = req.query;
 
