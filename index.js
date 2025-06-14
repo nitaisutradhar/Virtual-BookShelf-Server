@@ -110,9 +110,34 @@ async function run() {
     
     // books related APIs
     app.get('/books', async (req, res) => {
-      const result = await bookCollection.find().toArray()
-      res.send(result)
-    })
+  const { search, status } = req.query;
+
+  const query = {};
+
+  if (search) {
+    query.$or = [
+      { book_title: { $regex: search, $options: 'i' } },
+      { book_author: { $regex: search, $options: 'i' } }
+    ];
+  }
+
+  if (status) {
+    query.reading_status = status;
+  }
+
+  try {
+    const books = await bookCollection.find(query).toArray();
+    res.send(books);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: 'Failed to fetch books' });
+  }
+});
+
+    // app.get('/books', async (req, res) => {
+    //   const result = await bookCollection.find().toArray()
+    //   res.send(result)
+    // })
     app.get('/my-books/:email' , verifyJWT, async(req, res)=> {
       const decodedEmail = req.tokenEmail
       const email = req.params.email
@@ -164,6 +189,21 @@ async function run() {
       }
       res.json({upvote : result.upvote})
     })
+
+    // PATCH: Update reading status
+app.patch('/books/:id/reading-status', async (req, res) => {
+  const bookId = req.params.id;
+  const { reading_status } = req.body;
+
+  const result = await bookCollection.updateOne(
+    { _id: new ObjectId(bookId) },
+    { $set: { reading_status } }
+  );
+
+  res.send(result);
+});
+
+
     app.delete('/books/:id', async (req, res) => {
       const id = req.params.id;
       const query = {_id : new ObjectId(id)}
