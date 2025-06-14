@@ -53,6 +53,61 @@ async function run() {
 
     const usersCollection = client.db('bookshelf').collection('users')
     const bookCollection = client.db('bookshelf').collection('books')
+    const reviewsCollection = client.db('bookshelf').collection('reviews')
+
+    // reviews related APIs
+    app.post('/reviews', async (req, res) => {
+      const { book_id, user_email, review_text } = req.body;
+
+    if (!book_id || !user_email || !review_text) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+    const existing = await reviewsCollection.findOne({ book_id, user_email });
+
+      if (existing) {
+        return res.status(409).json({ error: "Review already exists. Use PUT to update." });
+      }
+
+      const result = await reviewsCollection.insertOne({
+        book_id,
+        user_email,
+        review_text,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      res.send(result)
+    })
+
+    app.put("/reviews/:id", async (req,res)=> {
+      const {id} = req.params;
+      const {review_text} = req.body;
+      const result = reviewsCollection.updateOne(
+        {_id: new ObjectId(id)},
+        { $set: {review_text, updatedAt: new Date}}
+      )
+      res.send(result)
+    })
+
+    app.get("/reviews", async( req,res)=> {
+      const {book_id} = req.query;
+      if (!book_id) {
+      return res.status(400).json({ error: "Missing book_id in query" });
+    }
+    const result = await reviewsCollection
+      .find({book_id})
+      .sort({updatedAt: -1})
+      .toArray()
+
+    res.send(result)
+    })
+
+    app.delete("/reviews/:id", async (req,res)=> {
+      const {id} = req.params
+      const result = await reviewsCollection.deleteOne({_id : new ObjectId(id)})
+      res.send(result)
+    })
+    
     // books related APIs
     app.get('/books', async (req, res) => {
       const result = await bookCollection.find().toArray()
