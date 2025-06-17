@@ -170,12 +170,20 @@ async function run() {
       const result = await bookCollection.insertOne(bookData)
       res.send(result)
     })
-    app.put('/update-book/:id', async (req, res)=> {
+    app.put('/update-book/:id', verifyJWT, async (req, res)=> {
       const {id} = req.params;
+      const tokenEmail = req.tokenEmail;
+
       const filter =  { _id : new ObjectId(id)}
-      const updatedBook = req.body
+      const book = await bookCollection.findOne(filter);
+
+      if(!book) return res.status(404).send({message: 'Book not found'})
+      if(book.user_email !== tokenEmail){
+        return res.status(403).send({message: 'Forbidden Access'})
+      }
+      //const updatedBook = req.body
       const updatedDoc = {
-        $set: updatedBook
+        $set: req.body
       }
       const options = { upsert : true }
       const result = await bookCollection.updateOne(filter, updatedDoc, options)
@@ -210,9 +218,18 @@ app.patch('/books/:id/reading-status', async (req, res) => {
 });
 
 
-    app.delete('/books/:id', async (req, res) => {
+    app.delete('/books/:id', verifyJWT, async (req, res) => {
       const id = req.params.id;
+      const tokenEmail = req.tokenEmail;
+
       const query = {_id : new ObjectId(id)}
+      const book = await bookCollection.findOne(query)
+
+      if (!book) return res.status(404).send({message: 'Book not found'});
+      if(book.user_email !== tokenEmail) {
+        return res.status(403).send({ message: 'Forbidden: You can only delete your own books'})
+      }
+
       const result = await bookCollection.deleteOne(query)
       res.send(result)
     })
