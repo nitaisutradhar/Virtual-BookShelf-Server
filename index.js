@@ -65,7 +65,7 @@ async function run() {
     const existing = await reviewsCollection.findOne({ book_id, user_email });
 
       if (existing) {
-        return res.status(409).json({ error: "Review already exists. Use PUT to update." });
+        return res.status(409).json({ error: "Review already exists. Use Edit button to update." });
       }
 
       const result = await reviewsCollection.insertOne({
@@ -110,7 +110,7 @@ async function run() {
     
     // books related APIs
     app.get('/newlyReleased', async (req,res)=> {
-      const result = await bookCollection.find().sort({createdAt: -1}).limit(5).toArray()
+      const result = await bookCollection.find().sort({createdAt: -1}).limit(4).toArray()
       res.send(result)
     })
 
@@ -126,10 +126,31 @@ async function run() {
       { book_author: { $regex: search, $options: 'i' } }
     ];
   }
+    // তাহলে book_title বা book_author ফিল্ডের যেকোনো একটিতে search string থাকলে match করবে।
+
+    // $regex দিয়ে partial match করা যায়।
+
+    // $options: 'i' দিয়ে case-insensitive করা হয়েছে (e.g., "harry", "Harry", "HARRY" সব match করবে)।
+  
 
   if (status) {
     query.reading_status = status;
   }
+  /*
+  ✅ উদাহরণ
+  --------
+    ✅ Request: GET /books?search=Rowling&status=completed
+    ✅ MongoDB Query:
+    {
+      $or: [
+        { book_title: { $regex: "Rowling", $options: 'i' } },
+        { book_author: { $regex: "Rowling", $options: 'i' } }
+      ],
+      reading_status: "completed"
+    }
+
+
+  */
 
   try {
     const books = await bookCollection.find(query).toArray();
